@@ -47,47 +47,17 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 			Str("exchangeToken", v.Get("code")).
 			Msg("Got valid exchange token")
 
-		form := url.Values{}
-		form.Add("grant_type", "authorization_code")
-		form.Add("code", v.Get("code"))
-		form.Add("redirect_uri", getRedirectURL())
-
-		log.Info().
-			Str("url", form.Encode()).
-			Msg("encode form")
-
-		// exchange request
-		ex, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/access", SONOS_LOGIN), strings.NewReader(form.Encode()))
-		ex.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		ex.SetBasicAuth(config.ClientKey, config.ClientSecret)
+		token, err := exchangeAuthCode(v.Get("code"))
 
 		if err != nil {
-			log.Error().Err(err)
+			http.Error(w, "Token exchange failed: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		resp, err := http.DefaultClient.Do(ex)
-		if err != nil {
-			log.Error().Err(err)
-			http.Error(w, err.Error(), 500)
-			return
-		}
-
-		//defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-
-		if resp.StatusCode != http.StatusOK {
-			log.Warn().Int("HTTP Status", resp.StatusCode)
-			fmt.Fprintf(w, "Something went wrong (%d): %s", resp.StatusCode, string(body))
-			return
-		}
-
-		writeToken(body)
-		fmt.Fprintf(w, "OK"+string(body))
-		return
+		saveToken(token)
+		http.Redirect(w, r, "/", 302)
 	} else {
 		http.Error(w, "Invalid Params", http.StatusBadRequest)
-		return
 	}
 }
 
@@ -95,18 +65,72 @@ func validAccessToken() bool {
 	return false
 }
 
+func exchangeAuthCode(authCode string) (SonosAuthentication, error) {
+	t := SonosAuthentication{}
+
+	form := url.Values{}
+	form.Add("grant_type", "authorization_code")
+	form.Add("code", authCode)
+	form.Add("redirect_uri", getRedirectURL())
+
+	log.Info().
+		Str("url", form.Encode()).
+		Msg("encode form")
+
+	call, err := makeAuthedRequest(form)
+	if err != nil {
+		return t, err
+	}
+
+	e := json.Unmarshal(call, &t)
+
+	if e != nil {
+		return t, e
+	}
+
+	return t, nil
+}
+
+func makeAuthedRequest(params url.Values) ([]byte, error) {
+	// build request object
+	ex, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/access", SONOS_LOGIN), strings.NewReader(params.Encode()))
+	ex.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	ex.SetBasicAuth(config.ClientKey, config.ClientSecret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// execute request
+	r, err := http.DefaultClient.Do(ex)
+	if err != nil {
+		return nil, err
+	}
+
+	defer r.Body.Close()
+	body, _ := io.ReadAll(r.Body)
+
+	if r.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP call not successful (Status %d): %s", r.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
 func getRedirectURL() string {
 	return fmt.Sprintf("http://localhost:%d/auth/redirect", config.Port)
 }
 
-func writeToken(body []byte) (token SonosAuthentication, e error) {
-	token = SonosAuthentication{}
-	e = json.Unmarshal(body, &token)
+func saveToken(token SonosAuthentication) error {
+	content, e := json.MarshalIndent(token, "", "\t")
 
 	if e != nil {
-		fmt.Println("Error:", e)
-		return
+		return e
 	}
-	e = ioutil.WriteFile("token.json", body, 0644)
-	return
+
+	e = ioutil.WriteFile("token.json", content, 0644)
+	if e != nil {
+		return e
+	}
+	return nil
 }
