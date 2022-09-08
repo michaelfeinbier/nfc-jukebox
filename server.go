@@ -14,11 +14,16 @@ type Configuration struct {
 	Port         int
 	ClientKey    string
 	ClientSecret string
+	SonosBaseURI string
 }
 
+var config = Configuration{}
+
 func main() {
-	config := Configuration{}
+
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	configFile, err := os.Open("config.json")
 	if err != nil {
 		log.Fatal().Err(err)
@@ -30,12 +35,12 @@ func main() {
 		log.Fatal().Err(err)
 	}
 
-	//http.HandleFunc("/mytest", indexHandler)
+	http.HandleFunc("/auth", startAuthentication)
+	http.HandleFunc("/auth/redirect", handleCallback)
+	http.Handle("/", http.FileServer(http.Dir("static/")))
 
 	log.Info().Msgf("Starting Server on Port %d", config.Port)
-	server :=
-		http.ListenAndServe(fmt.Sprintf(":%d", config.Port),
-			http.FileServer(http.Dir("static/")))
+	server := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
 	log.Fatal().Err(server)
 
 }
