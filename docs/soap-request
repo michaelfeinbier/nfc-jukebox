@@ -1,0 +1,20 @@
+POST /MediaRenderer/AVTransport/Control HTTP/1.1
+SOAPAction: "urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI"
+Content-type: text/xml; charset=utf8
+Accept: */*
+Content-Length: 1076
+User-Agent: node-fetch/1.0 (+https://github.com/bitinn/node-fetch)
+Accept-Encoding: gzip,deflate
+Connection: close
+Host: 192.168.1.44:1400
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+<s:Body><u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><CurrentURI>x-sonos-spotify:spotify%3atrack%3a56J2Ui1UG2NlhOs22Rkr2G?sid=9&amp;flags=8224&amp;sn=7</CurrentURI><CurrentURIMetaData>&lt;DIDL-Lite xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot; xmlns:r=&quot;urn:schemas-rinconnetworks-com:metadata-1-0/&quot; xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot;&gt;&lt;item id=&quot;00032020spotify%3atrack%3a56J2Ui1UG2NlhOs22Rkr2G&quot; restricted=&quot;true&quot;&gt;&lt;dc:title&gt;&lt;/dc:title&gt;&lt;upnp:class&gt;object.item.audioItem.musicTrack&lt;/upnp:class&gt;&lt;desc id=&quot;cdudn&quot; nameSpace=&quot;urn:schemas-rinconnetworks-com:metadata-1-0/&quot;&gt;SA_RINCON2311_X_#Svc2311-0-Token&lt;/desc&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;</CurrentURIMetaData></u:SetAVTransportURI></s:Body>
+</s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 266
+CONTENT-TYPE: text/xml; charset="utf-8"
+EXT:
+Server: Linux UPnP/1.0 Sonos/69.1-31120 (ZPS13)
+Connection: close
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:SetAVTransportURIResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"></u:SetAVTransportURIResponse></s:Body></s:Envelope>

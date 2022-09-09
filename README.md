@@ -21,3 +21,5 @@ I plan to achieve this by running a small webserver on a raspberry pi and then p
 - https://www.instructables.com/Albums-With-NFC-Tags-to-Automatically-Play-Spotify/
 - https://shkspr.mobi/blog/2020/09/how-can-i-launch-a-spotify-album-from-an-nfc-tag/
 - https://developer.sonos.com/reference/control-api/
+
+https://open.spotify.com/track/2SgQjReOSmKZYnRnt88B09?si=7f0e16d0bca9460a

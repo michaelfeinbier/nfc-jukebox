@@ -1,0 +1,20 @@
+POST /MediaRenderer/AVTransport/Control HTTP/1.1
+SOAPAction: "urn:schemas-upnp-org:service:AVTransport:1#AddURIToQueue"
+Content-type: text/xml; charset=utf8
+Accept: */*
+Content-Length: 1186
+User-Agent: node-fetch/1.0 (+https://github.com/bitinn/node-fetch)
+Accept-Encoding: gzip,deflate
+Connection: close
+Host: 192.168.1.44:1400
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+<s:Body><u:AddURIToQueue xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><EnqueuedURI>x-rincon-cpcontainer:1004206cspotify%3aalbum%3a4mPGheRWAndptZPmGjiITd?sid=9&amp;flags=8300&amp;sn=7</EnqueuedURI><EnqueuedURIMetaData>&lt;DIDL-Lite xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot; xmlns:r=&quot;urn:schemas-rinconnetworks-com:metadata-1-0/&quot; xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot;&gt;&lt;item id=&quot;0004206cspotify%3aalbum%3a4mPGheRWAndptZPmGjiITd&quot; restricted=&quot;true&quot;&gt;&lt;dc:title&gt;&lt;/dc:title&gt;&lt;upnp:class&gt;object.container.album.musicAlbum&lt;/upnp:class&gt;&lt;desc id=&quot;cdudn&quot; nameSpace=&quot;urn:schemas-rinconnetworks-com:metadata-1-0/&quot;&gt;SA_RINCON2311_X_#Svc2311-0-Token&lt;/desc&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;</EnqueuedURIMetaData><DesiredFirstTrackNumberEnqueued>0</DesiredFirstTrackNumberEnqueued><EnqueueAsNext>1</EnqueueAsNext></u:AddURIToQueue></s:Body>
+</s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 382
+CONTENT-TYPE: text/xml; charset="utf-8"
+EXT:
+Server: Linux UPnP/1.0 Sonos/69.1-31120 (ZPS13)
+Connection: close
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:AddURIToQueueResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><FirstTrackNumberEnqueued>1</FirstTrackNumberEnqueued><NumTracksAdded>16</NumTracksAdded><NewQueueLength>16</NewQueueLength></u:AddURIToQueueResponse></s:Body></s:Envelope>

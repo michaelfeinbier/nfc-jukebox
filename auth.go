@@ -21,9 +21,10 @@ type SonosAuthentication struct {
 }
 
 const (
-	SONOS_LOGIN = "https://api.sonos.com/login/v3"
-	SCOPE       = "playback-control-all"
-	STATE       = "demo"
+	SONOS_LOGIN   = "https://api.sonos.com/login/v3"
+	SPOTIFY_LOGIN = "https://accounts.spotify.com"
+	SCOPE         = "user-modify-playback-state user-read-playback-state user-read-currently-playing"
+	STATE         = "demo"
 )
 
 func startAuthentication(w http.ResponseWriter, r *http.Request) {
@@ -33,9 +34,11 @@ func startAuthentication(w http.ResponseWriter, r *http.Request) {
 	p.Add("response_type", "code")
 	p.Add("scope", SCOPE)
 	p.Add("state", STATE)
-	redirectUrl := fmt.Sprintf("%s/oauth?%s", SONOS_LOGIN, p.Encode())
+	redirectUrl := fmt.Sprintf("%s/authorize?%s", SPOTIFY_LOGIN, p.Encode())
 
-	log.Debug().Msg("Redirect to: " + redirectUrl)
+	log.Debug().
+		Str("redir_url", getRedirectURL()).
+		Msg("Redirect to: " + redirectUrl)
 
 	http.Redirect(w, r, redirectUrl, 307)
 }
@@ -93,7 +96,7 @@ func exchangeAuthCode(authCode string) (SonosAuthentication, error) {
 
 func makeAuthedRequest(params url.Values) ([]byte, error) {
 	// build request object
-	ex, err := http.NewRequest("POST", fmt.Sprintf("%s/oauth/access", SONOS_LOGIN), strings.NewReader(params.Encode()))
+	ex, err := http.NewRequest("POST", fmt.Sprintf("%s/api/token", SPOTIFY_LOGIN), strings.NewReader(params.Encode()))
 	ex.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	ex.SetBasicAuth(config.ClientKey, config.ClientSecret)
 
