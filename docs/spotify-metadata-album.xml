@@ -1,0 +1,7 @@
+<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
+    <item id="0004206cspotify%3aalbum%3a4mPGheRWAndptZPmGjiITd" restricted="true">
+        <dc:title></dc:title>
+        <upnp:class>object.container.album.musicAlbum</upnp:class>
+        <desc id="cdudn" nameSpace="urn:schemas-rinconnetworks-com:metadata-1-0/">SA_RINCON2311_X_#Svc2311-0-Token</desc>
+    </item>
+</DIDL-Lite>

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"vinyl-player/sonos"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -20,6 +21,12 @@ type Configuration struct {
 var config = Configuration{}
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	s := sonos.New("192.168.1.44")
+	s.PlaySpotifyAlbum("spotify:album:0LkUEJ6wknRPbMXQGFbHrk")
+}
+
+func main2() {
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
