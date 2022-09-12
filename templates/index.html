@@ -1,3 +1,4 @@
+{{ define "header" }}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,18 +16,49 @@
 </head>
 <body>
 
-  <!-- Primary Page Layout
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <!-- Primary Page Layout -->
   <div class="container">
     <div class="row">
-      <div class="one-half column" style="margin-top: 25%">
-        <h4>Basic Page</h4>
-        <p>This index.html page is a placeholder with the CSS, font and favicon. It's just waiting for you to add some content! If you need some help hit up the <a href="http://www.getskeleton.com">Skeleton documentation</a>.</p>
+      <div class="one-half column" style="margin-top: 1rem">
+{{end}}
+{{ template "header" }}
+        <h4>Vinyl collection</h4>
+        <!-- <p>This index.html page is a placeholder with the CSS, font and favicon. It's just waiting for you to add some content! If you need some help hit up the <a href="http://www.getskeleton.com">Skeleton documentation</a>.</p> -->
+
+
+        <table class="u-full-width">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cover</th>
+              <th>Name</th>
+              <th>Artist</th>
+              <th>Links</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{ range .}}
+            <tr>
+              <td>{{.Id}}</td>
+              <td></td>
+              <td>{{.Name}}</td>
+              <td>{{.Artist}}</td>
+              <td>
+                <a href="/play/{{.Id}}">🎵</a>
+              </td>
+            </tr>
+            {{ end}}
+          </tbody>
+        </table>
+
+{{ template "footer" }}
+
+{{ define "footer"}}
       </div>
     </div>
   </div>
 
-<!-- End Document
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+<!-- End Document -->
 </body>
 </html>
+{{ end }}

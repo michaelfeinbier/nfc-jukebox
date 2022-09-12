@@ -94,6 +94,26 @@ func exchangeAuthCode(authCode string) (SonosAuthentication, error) {
 	return t, nil
 }
 
+func getCredentialsCode() (SonosAuthentication, error) {
+	t := SonosAuthentication{}
+
+	form := url.Values{}
+	form.Add("grant_type", "client_credentials")
+
+	call, err := makeAuthedRequest(form)
+	if err != nil {
+		return t, err
+	}
+
+	e := json.Unmarshal(call, &t)
+
+	if e != nil {
+		return t, e
+	}
+
+	return t, nil
+}
+
 func makeAuthedRequest(params url.Values) ([]byte, error) {
 	// build request object
 	ex, err := http.NewRequest("POST", fmt.Sprintf("%s/api/token", SPOTIFY_LOGIN), strings.NewReader(params.Encode()))
