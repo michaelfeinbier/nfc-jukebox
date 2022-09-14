@@ -33,13 +33,13 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	configFile, err := os.Open("config.json")
 	if err != nil {
-		log.Fatal().Err(err)
+		panic(err)
 	}
 
 	decoder := json.NewDecoder(configFile)
 	err = decoder.Decode(&config)
 	if err != nil {
-		log.Fatal().Err(err)
+		panic(err)
 	}
 
 	sonosPlayer = sonos.New("192.168.1.44")
