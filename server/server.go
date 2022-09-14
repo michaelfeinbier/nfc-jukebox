@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"strconv"
 	"vinyl-player/sonos"
 
+	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -19,12 +19,11 @@ type Configuration struct {
 	ClientKey    string
 	ClientSecret string
 	SonosBaseURI string
+	RedisURI     string
 }
 
 var config = Configuration{}
-var storage = VinylStorage{
-	fileName: "album.json",
-}
+var storage = VinylStorage{}
 var templates = template.Must(template.ParseGlob("templates/*.html"))
 var vaildPaths = regexp.MustCompile("^/(edit|save|view|play)/([0-9]+)$")
 var sonosPlayer sonos.SonosPlayer
@@ -46,16 +45,46 @@ func main() {
 	}
 
 	sonosPlayer = sonos.New("192.168.1.44")
+	storage.Connect(config.RedisURI)
 
-	//http.HandleFunc("/auth", startAuthentication)
-	//http.HandleFunc("/auth/redirect", handleCallback)
-	http.HandleFunc("/overview", handleIndex)
-	http.HandleFunc("/play/", handlePlay)
-	http.Handle("/", http.FileServer(http.Dir("static/")))
+	server := gin.Default()
+	server.POST("/album", saveAlbum)
+	server.GET("/album/:id", getAlbumById)
+	server.GET("/album", getAllAlbums)
 
-	log.Info().Msgf("Starting Server on Port %d", config.Port)
-	server := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), nil)
-	log.Fatal().Err(server)
+	server.Run(fmt.Sprintf(":%d", config.Port))
+}
+
+func saveAlbum(c *gin.Context) {
+	newAlbum := VinylAlbum{}
+
+	if err := c.BindJSON(&newAlbum); err != nil {
+		return
+	}
+
+	if _, err := storage.Create(&newAlbum); err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, newAlbum)
+}
+
+func getAlbumById(c *gin.Context) {
+	id := c.Param("id")
+
+	a, e := storage.getOne(id)
+	if e != nil {
+		c.AbortWithError(http.StatusNotFound, e)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, a)
+}
+
+func getAllAlbums(c *gin.Context) {
+
+	c.IndentedJSON(http.StatusOK, storage.getAll())
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -70,8 +99,8 @@ func handlePlay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idInt, _ := strconv.ParseInt(id[2], 10, 8)
-	v, e := storage.getOne(idInt)
+	//idInt, _ := strconv.ParseInt(id[2], 10, 8)
+	v, e := storage.getOne(id[2])
 	if e != nil {
 		http.Error(w, e.Error(), 404)
 		return

@@ -1,64 +1,110 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"os"
+
+	"github.com/go-redis/redis/v9"
 )
 
+type uuid = string
 type VinylAlbum struct {
-	Id     int64
+	Id     int64 `redis:"Id"`
 	Name   string
 	Artist string
 	Links  AlbumLinks
 }
 
 type AlbumLinks struct {
-	SpotifyURI string `json:"spotify"`
+	SpotifyURI    string `json:"spotify"`
+	MusicBrainzId uuid   `json:"mbid"`
 }
 
 type VinylStorage struct {
-	Albums   []VinylAlbum
-	fileName string
+	Albums []VinylAlbum
+	redis  *redis.Client
+}
+
+var ctx = context.Background()
+
+const (
+	ALBUM_LIST_KEY   = "album_list"
+	ALBUM_KEY_PREFIX = "album"
+	LINK_KEY_PREFIX  = "link"
+)
+
+//var client
+
+func (s *VinylStorage) Connect(uri string) {
+	opt, _ := redis.ParseURL(uri)
+	s.redis = redis.NewClient(opt)
 }
 
 func (s *VinylStorage) getAll() []VinylAlbum {
-	return s.readJSON(s.fileName, func(va VinylAlbum) bool { return true }, false)
-}
+	r := s.redis.SMembers(ctx, ALBUM_LIST_KEY)
 
-func (s *VinylStorage) getOne(ID int64) (VinylAlbum, error) {
-	res := s.readJSON(s.fileName, func(va VinylAlbum) bool {
-		return va.Id == ID
-	}, true)
+	all := s.redis.MGet(ctx, r.Val()...)
+	var data = []VinylAlbum{}
 
-	if len(res) == 0 {
-		return VinylAlbum{}, fmt.Errorf("Did not find album with id %d in storage", ID)
-	}
-
-	return res[0], nil
-}
-
-func (s *VinylStorage) readJSON(fileName string, filter func(VinylAlbum) bool, onlyOne bool) []VinylAlbum {
-	file, _ := os.Open(fileName)
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-
-	filteredData := []VinylAlbum{}
-
-	decoder.Token()
-
-	data := VinylAlbum{}
-	for decoder.More() {
-		decoder.Decode(&data)
-
-		if filter(data) {
-			filteredData = append(filteredData, data)
-
-			if onlyOne {
-				return filteredData
-			}
+	for _, r := range all.Val() {
+		a := VinylAlbum{}
+		if e := json.Unmarshal([]byte(r.(string)), &a); e != nil {
+			panic(e)
 		}
+		data = append(data, a)
 	}
 
-	return filteredData
+	return data
+}
+
+func (s *VinylStorage) getOne(ID string) (VinylAlbum, error) {
+	key := fmt.Sprintf("%s:%s", ALBUM_KEY_PREFIX, ID)
+	res := s.redis.Get(ctx, key)
+
+	if res.Err() != nil {
+		return VinylAlbum{}, res.Err()
+	}
+
+	var album = VinylAlbum{}
+	if err := json.Unmarshal([]byte(res.Val()), &album); err != nil {
+		return album, err
+	}
+
+	return album, nil
+}
+
+func (s *VinylStorage) Create(album *VinylAlbum) (*VinylAlbum, error) {
+	album.Id = s.getNewId()
+	r, k, e := s.Save(album)
+	if e != nil {
+		return album, e
+	}
+
+	s.redis.SAdd(ctx, ALBUM_LIST_KEY, k)
+
+	return r, nil
+}
+
+func (s *VinylStorage) Save(album *VinylAlbum) (cAlbum *VinylAlbum, key string, e error) {
+	if album.Id == 0 {
+		e = fmt.Errorf("Record does not have ID")
+		return
+	}
+
+	ja, _ := json.Marshal(album)
+	key = fmt.Sprintf("%s:%d", ALBUM_KEY_PREFIX, album.Id)
+	r := s.redis.Set(ctx, key, ja, 0)
+	if r.Err() != nil {
+		e = r.Err()
+		return
+	}
+
+	cAlbum = album
+
+	return
+}
+
+func (s *VinylStorage) getNewId() int64 {
+	return s.redis.Incr(ctx, "next_album_id").Val()
 }
