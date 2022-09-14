@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
 	"regexp"
@@ -24,7 +23,6 @@ type Configuration struct {
 
 var config = Configuration{}
 var storage = VinylStorage{}
-var templates = template.Must(template.ParseGlob("templates/*.html"))
 var vaildPaths = regexp.MustCompile("^/(edit|save|view|play)/([0-9]+)$")
 var sonosPlayer sonos.SonosPlayer
 
@@ -51,6 +49,8 @@ func main() {
 	server.POST("/album", saveAlbum)
 	server.GET("/album/:id", getAlbumById)
 	server.GET("/album", getAllAlbums)
+	server.Static("/assets", "./static/assets")
+	server.StaticFile("/", "./static/index.html")
 
 	server.Run(fmt.Sprintf(":%d", config.Port))
 }
@@ -87,10 +87,6 @@ func getAllAlbums(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, storage.getAll())
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index", storage.getAll())
-}
-
 func handlePlay(w http.ResponseWriter, r *http.Request) {
 	id := vaildPaths.FindStringSubmatch(r.URL.Path)
 
@@ -112,11 +108,4 @@ func handlePlay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/overview", 307)
-}
-
-func renderTemplate(w http.ResponseWriter, tmpl string, data any) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
 }
