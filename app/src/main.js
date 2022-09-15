@@ -1,6 +1,19 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import VinylItem from './components/VinylItem.vue'
+import { createRouter, createWebHistory } from 'vue-router'
 
-import './assets/main.css'
+//import './assets/main.css'
+import './scss/style.scss'
+import * as bootstrap from 'bootstrap'
 
-createApp(App).mount('#app')
+const routes = [
+    {path: '/view/:id', component: VinylItem }
+]
+
+const router = createRouter({
+    history: createWebHistory(),
+    routes,
+})
+
+createApp(App).use(router).mount('#app')
