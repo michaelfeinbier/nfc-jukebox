@@ -1,32 +1,49 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/go-redis/redis/v9"
+
+	Spotify "github.com/zmb3/spotify/v2"
 )
 
 type uuid = string
 type VinylAlbum struct {
-	Id     int64 `redis:"Id"`
-	Name   string
-	Artist string
-	Links  AlbumLinks
+	Id         int64 `redis:"Id"`
+	Name       string
+	Artist     string
+	Links      AlbumLinks
+	ImageSmall string
+	Metadata   AlbumMetadata
 }
 
 type AlbumLinks struct {
-	SpotifyURI    string `json:"spotify"`
-	MusicBrainzId uuid   `json:"mbid"`
+	SpotifyAlbumURI  string `json:"spotify"`
+	SpotifyArtistURI string `json:"spotify_artist"`
+	MusicBrainzId    uuid   `json:"mbid"`
+}
+
+type AlbumMetadata struct {
+	ReleaseDate string
+	TotalTracks int8
+	Image       string
+	UPCDigital  string
+	UPCRelease  string
+	Tracks      []Track
+}
+
+type Track struct {
+	URI    Spotify.URI
+	Number int
+	Name   string
 }
 
 type VinylStorage struct {
-	Albums []VinylAlbum
-	redis  *redis.Client
+	redis   *redis.Client
+	spotify *Spotify.Client
 }
-
-var ctx = context.Background()
 
 const (
 	ALBUM_LIST_KEY   = "album_list"
@@ -58,7 +75,7 @@ func (s *VinylStorage) getAll() []VinylAlbum {
 	return data
 }
 
-func (s *VinylStorage) getOne(ID string) (VinylAlbum, error) {
+func (s *VinylStorage) getOne(ID string, withMeta bool) (VinylAlbum, error) {
 	key := fmt.Sprintf("%s:%s", ALBUM_KEY_PREFIX, ID)
 	res := s.redis.Get(ctx, key)
 
@@ -71,7 +88,53 @@ func (s *VinylStorage) getOne(ID string) (VinylAlbum, error) {
 		return album, err
 	}
 
+	if withMeta {
+		err := s.GetSpotifyMetadata(Spotify.ID(album.Links.SpotifyAlbumURI[14:]), &album.Metadata)
+		if err != nil {
+			return album, err
+		}
+	}
+
 	return album, nil
+}
+
+func (s *VinylStorage) GetSpotifyMetadata(id Spotify.ID, a *AlbumMetadata) error {
+	r, e := s.spotify.GetAlbum(ctx, id)
+	if e != nil {
+		return e
+	}
+
+	TransformMetadata(r, a)
+	if e != nil {
+		return e
+	}
+
+	return nil
+}
+
+func TransformMetadata(r *Spotify.FullAlbum, a *AlbumMetadata) {
+	var img Spotify.Image
+	for _, i := range r.Images {
+		if i.Width > 600 {
+			img = i
+			break
+		}
+	}
+
+	var tracks []Track
+	for _, t := range r.Tracks.Tracks {
+		tracks = append(tracks, Track{
+			Name:   t.Name,
+			Number: t.TrackNumber,
+			URI:    t.URI,
+		})
+	}
+
+	a.ReleaseDate = r.ReleaseDate
+	a.TotalTracks = int8(r.Tracks.Total)
+	a.UPCDigital = r.ExternalIDs["upc"]
+	a.Image = img.URL
+	a.Tracks = tracks
 }
 
 func (s *VinylStorage) Create(album *VinylAlbum) (*VinylAlbum, error) {
