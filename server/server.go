@@ -49,7 +49,11 @@ func main() {
 	server.GET("/album/:id", getAlbumById)
 	server.GET("/album", getAllAlbums)
 	server.Static("/assets", "./static/assets")
-	server.StaticFile("/", "./static/index.html")
+
+	// Server always index for SPA
+	server.NoRoute(func(c *gin.Context) {
+		c.File("./static/index.html")
+	})
 
 	server.POST("/barcode", func(c *gin.Context) {
 		r, e := CreateFromBarcode(c.PostForm("barcode"))
