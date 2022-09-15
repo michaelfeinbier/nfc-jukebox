@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"regexp"
 	"vinyl-player/sonos"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +25,6 @@ var spotify *Spotify.Client
 var storage = VinylStorage{
 	spotify: spotify,
 }
-var vaildPaths = regexp.MustCompile("^/(edit|save|view|play)/([0-9]+)$")
 var sonosPlayer = sonos.SonosPlayer{}
 
 var ctx = context.Background()
@@ -45,29 +43,45 @@ func main() {
 	storage.spotify = spotify
 
 	server := gin.Default()
-	//server.POST("/album", saveAlbum)
-	server.GET("/album/:id", getAlbumById)
-	server.GET("/album", getAllAlbums)
-	server.Static("/assets", "./static/assets")
 
-	// Server always index for SPA
+	// Serve index and assets for SPA
+	server.Static("/assets", "./static/assets")
 	server.NoRoute(func(c *gin.Context) {
 		c.File("./static/index.html")
 	})
 
-	server.POST("/barcode", func(c *gin.Context) {
-		r, e := CreateFromBarcode(c.PostForm("barcode"))
-		if e != nil {
-			c.AbortWithStatusJSON(404, gin.H{"message": e.Error()})
-			return
+	// This is the route coded to the NFC tags
+	server.GET("/p/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		v, _ := storage.getOne(id, false)
+		if len(v.Links.SpotifyAlbumURI) > 0 {
+			sonosPlayer.PlaySpotifyAlbum(v.Links.SpotifyAlbumURI)
 		}
-
-		if c.PostForm("save") == "1" {
-			storage.Create(r)
-		}
-
-		c.IndentedJSON(200, r)
+		// redirect to SPA app
+		c.Redirect(http.StatusTemporaryRedirect, "/view/"+id)
 	})
+
+	// API routes
+	api := server.Group("/api")
+	{
+		api.GET("/album/:id", getAlbumById)
+		api.GET("/album", func(c *gin.Context) {
+			c.IndentedJSON(http.StatusOK, storage.getAll())
+		})
+		api.POST("/barcode", func(c *gin.Context) {
+			r, e := CreateFromBarcode(c.PostForm("barcode"))
+			if e != nil {
+				c.AbortWithStatusJSON(404, gin.H{"message": e.Error()})
+				return
+			}
+
+			if c.PostForm("save") == "1" {
+				storage.Create(r)
+			}
+
+			c.IndentedJSON(200, r)
+		})
+	}
 
 	server.Run(fmt.Sprintf(":%s", os.Getenv("HTTP_PORT")))
 }
@@ -109,32 +123,4 @@ func getAlbumById(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, a)
-}
-
-func getAllAlbums(c *gin.Context) {
-
-	c.IndentedJSON(http.StatusOK, storage.getAll())
-}
-
-func handlePlay(w http.ResponseWriter, r *http.Request) {
-	id := vaildPaths.FindStringSubmatch(r.URL.Path)
-
-	if id == nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	//idInt, _ := strconv.ParseInt(id[2], 10, 8)
-	v, e := storage.getOne(id[2], true)
-	if e != nil {
-		http.Error(w, e.Error(), 404)
-		return
-	}
-
-	e = sonosPlayer.PlaySpotifyAlbum(v.Links.SpotifyAlbumURI)
-	if e != nil {
-		http.Error(w, e.Error(), 500)
-		return
-	}
-	http.Redirect(w, r, "/overview", 307)
 }
