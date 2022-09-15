@@ -11,12 +11,11 @@ import (
 
 type uuid = string
 type VinylAlbum struct {
-	Id         int64 `redis:"Id"`
-	Name       string
-	Artist     string
-	Links      AlbumLinks
-	ImageSmall string
-	Metadata   AlbumMetadata
+	Id       string // Barcode
+	Name     string
+	Artist   string
+	Links    AlbumLinks
+	Metadata AlbumMetadata
 }
 
 type AlbumLinks struct {
@@ -138,7 +137,10 @@ func TransformMetadata(r *Spotify.FullAlbum, a *AlbumMetadata) {
 }
 
 func (s *VinylStorage) Create(album *VinylAlbum) (*VinylAlbum, error) {
-	album.Id = s.getNewId()
+	album.Id = album.Metadata.UPCRelease
+	if album.Id == "" {
+		return album, fmt.Errorf("Record does not have barcode in .Metadata.UPCRelease")
+	}
 	r, k, e := s.Save(album)
 	if e != nil {
 		return album, e
@@ -150,13 +152,13 @@ func (s *VinylStorage) Create(album *VinylAlbum) (*VinylAlbum, error) {
 }
 
 func (s *VinylStorage) Save(album *VinylAlbum) (cAlbum *VinylAlbum, key string, e error) {
-	if album.Id == 0 {
+	if album.Id == "" {
 		e = fmt.Errorf("Record does not have ID")
 		return
 	}
 
 	ja, _ := json.Marshal(album)
-	key = fmt.Sprintf("%s:%d", ALBUM_KEY_PREFIX, album.Id)
+	key = fmt.Sprintf("%s:%s", ALBUM_KEY_PREFIX, album.Id)
 	r := s.redis.Set(ctx, key, ja, 0)
 	if r.Err() != nil {
 		e = r.Err()
@@ -166,8 +168,4 @@ func (s *VinylStorage) Save(album *VinylAlbum) (cAlbum *VinylAlbum, key string, 
 	cAlbum = album
 
 	return
-}
-
-func (s *VinylStorage) getNewId() int64 {
-	return s.redis.Incr(ctx, "next_album_id").Val()
 }
