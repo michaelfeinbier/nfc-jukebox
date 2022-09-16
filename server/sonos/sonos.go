@@ -21,12 +21,16 @@ const (
 	UPNP_CLASS_ALBUM = "object.container.album.musicAlbum"
 
 	// TODO: put to config?
-	COORDINATOR_UID = "RINCON_7828CA0E099601400"
+	COORDINATOR_UID = "RINCON_347E5C03D62F01400"
 )
 
 type SonosPlayer struct {
-	ip   string
-	port int8
+	config *SonosConfig
+}
+
+type SonosConfig struct {
+	IpAddress     string
+	CoordinatorId string
 }
 
 type soapRemoveAllTracksFromQueue struct {
@@ -36,9 +40,9 @@ type soapRemoveAllTracksFromQueue struct {
 
 var httpHelper *sonosHttp
 
-func New(ipAddress string) (s SonosPlayer) {
-	s = SonosPlayer{ip: ipAddress}
-	httpHelper = create(ipAddress)
+func New(c *SonosConfig) (s SonosPlayer) {
+	s = SonosPlayer{config: c}
+	httpHelper = create(c.IpAddress)
 	return
 }
 

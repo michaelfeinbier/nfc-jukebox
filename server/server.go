@@ -11,8 +11,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	Spotify "github.com/zmb3/spotify/v2"
-	SpotifyAuth "github.com/zmb3/spotify/v2/auth"
 	"golang.org/x/oauth2/clientcredentials"
+	SpotifyAuth "golang.org/x/oauth2/spotify"
 )
 
 type ErrorResponse struct {
@@ -33,13 +33,18 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	sonosPlayer = sonos.New(os.Getenv("SONOS_PLAYER"))
+	sonosPlayer = sonos.New(&sonos.SonosConfig{
+		IpAddress:     os.Getenv("SONOS_PLAYER"),
+		CoordinatorId: os.Getenv("SONOS_COORDINATOR"),
+	})
 	storage.Connect(os.Getenv("REDIS_URI"))
 
-	spotify = connectSpotify(&clientcredentials.Config{
+	scfg := &clientcredentials.Config{
 		ClientID:     os.Getenv("SPOTIFY_CLIENT_ID"),
 		ClientSecret: os.Getenv("SPOTIFY_CLIENT_SECRET"),
-	})
+		TokenURL:     SpotifyAuth.Endpoint.TokenURL,
+	}
+	spotify = Spotify.New(scfg.Client(ctx))
 	storage.spotify = spotify
 
 	server := gin.Default()
@@ -55,7 +60,9 @@ func main() {
 		id := c.Param("id")
 		v, _ := storage.getOne(id, false)
 		if len(v.Links.SpotifyAlbumURI) > 0 {
-			sonosPlayer.PlaySpotifyAlbum(v.Links.SpotifyAlbumURI)
+			if e := sonosPlayer.PlaySpotifyAlbum(v.Links.SpotifyAlbumURI); e != nil {
+				c.AbortWithError(500, e)
+			}
 		}
 		// redirect to SPA app
 		c.Redirect(http.StatusTemporaryRedirect, "/view/"+id)
@@ -84,18 +91,6 @@ func main() {
 	}
 
 	server.Run(fmt.Sprintf(":%s", os.Getenv("HTTP_PORT")))
-}
-
-func connectSpotify(cfg *clientcredentials.Config) *Spotify.Client {
-	cfg.TokenURL = SpotifyAuth.TokenURL
-
-	token, err := cfg.Token(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	httpClient := SpotifyAuth.New().Client(ctx, token)
-	return Spotify.New(httpClient)
 }
 
 func saveAlbum(c *gin.Context) {
