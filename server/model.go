@@ -18,6 +18,13 @@ type VinylAlbum struct {
 	Metadata AlbumMetadata
 }
 
+type VinylAlbumList struct {
+	Id       string
+	Name     string
+	Artist   string
+	Metadata AlbumMetadataList
+}
+
 type AlbumLinks struct {
 	SpotifyAlbumURI  string `json:"spotify"`
 	SpotifyArtistURI string `json:"spotify_artist"`
@@ -31,6 +38,11 @@ type AlbumMetadata struct {
 	UPCDigital  string
 	UPCRelease  string
 	Tracks      []Track
+}
+
+type AlbumMetadataList struct {
+	ReleaseDate string
+	Image       string
 }
 
 type Track struct {
@@ -57,14 +69,14 @@ func (s *VinylStorage) Connect(uri string) {
 	s.redis = redis.NewClient(opt)
 }
 
-func (s *VinylStorage) getAll() []VinylAlbum {
+func (s *VinylStorage) getAll() []VinylAlbumList {
 	r := s.redis.SMembers(ctx, ALBUM_LIST_KEY)
 
 	all := s.redis.MGet(ctx, r.Val()...)
-	var data = []VinylAlbum{}
+	var data = []VinylAlbumList{}
 
 	for _, r := range all.Val() {
-		a := VinylAlbum{}
+		a := VinylAlbumList{}
 		if e := json.Unmarshal([]byte(r.(string)), &a); e != nil {
 			panic(e)
 		}

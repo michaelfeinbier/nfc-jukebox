@@ -30,3 +30,6 @@ Provide the following ENV var to the docker container to make it work
 - `SPOTIFY_CLIENT_ID` A spotify app client id
 - `SPOTIFY_CLIENT_SECRET` A spotify app client secret
 - `SONOS_PLAYER` The IP of your local Sonos to play on
+- `SONOS_COORDINATOR` UID of the ZonePlayer (e.g `RINCON_347E5C03D62F01400`)
+
+Photo by <a href="https://unsplash.com/@victrola?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Victrola Record Players</a> on <a href="https://unsplash.com/s/photos/vinyl?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Unsplash</a>
