@@ -8,8 +8,6 @@ import (
 	"vinyl-player/sonos"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	Spotify "github.com/zmb3/spotify/v2"
 	"golang.org/x/oauth2/clientcredentials"
 	SpotifyAuth "golang.org/x/oauth2/spotify"
@@ -28,16 +26,18 @@ var storage = VinylStorage{
 var sonosPlayer = sonos.SonosPlayer{}
 
 var ctx = context.Background()
+var discogs *Discogs
+var goldenRecord *GoldenRecord
 
 func main() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
 	sonosPlayer = sonos.New(&sonos.SonosConfig{
 		IpAddress:     os.Getenv("SONOS_PLAYER"),
 		CoordinatorId: os.Getenv("SONOS_COORDINATOR"),
 	})
 	storage.Connect(os.Getenv("REDIS_URI"))
+	discogs = &Discogs{
+		Token: os.Getenv("DISCOGS_TOKEN"),
+	}
 
 	scfg := &clientcredentials.Config{
 		ClientID:     os.Getenv("SPOTIFY_CLIENT_ID"),
@@ -75,19 +75,24 @@ func main() {
 		api.GET("/album", func(c *gin.Context) {
 			c.IndentedJSON(http.StatusOK, storage.getAll())
 		})
-		api.POST("/barcode", func(c *gin.Context) {
-			r, e := CreateFromBarcode(c.PostForm("barcode"))
-			if e != nil {
-				c.AbortWithStatusJSON(404, gin.H{"message": e.Error()})
-				return
-			}
 
-			if c.PostForm("save") == "1" {
-				storage.Create(r)
-			}
+		// connect services to search
+		search := api.Group("/search")
+		{
+			search.GET("/:q", func(ctx *gin.Context) {
+				r, _ := goldenRecord.CombinedSearch(ctx.Param("q"))
+				ctx.IndentedJSON(http.StatusOK, r)
+			})
 
-			c.IndentedJSON(200, r)
-		})
+			search.GET("/discogs/:q", func(ctx *gin.Context) {
+				r, e := discogs.FindByQuery(ctx.Param("q"))
+				if e != nil {
+					ctx.AbortWithError(500, e)
+					return
+				}
+				ctx.IndentedJSON(http.StatusOK, r)
+			})
+		}
 	}
 
 	server.Run(fmt.Sprintf(":%s", os.Getenv("HTTP_PORT")))

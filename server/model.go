@@ -14,8 +14,8 @@ type VinylAlbum struct {
 	Id       string // Barcode
 	Name     string
 	Artist   string
-	Links    AlbumLinks
-	Metadata AlbumMetadata
+	Links    AlbumLinks    `json:"links,omitempty"`
+	Metadata AlbumMetadata `json:"metadata,omitempty"`
 }
 
 type VinylAlbumList struct {
@@ -60,6 +60,34 @@ const (
 	ALBUM_LIST_KEY   = "album_list"
 	ALBUM_KEY_PREFIX = "album"
 	LINK_KEY_PREFIX  = "link"
+)
+
+// Hash Link types
+type ThirdParty int64
+
+func (t ThirdParty) String() string {
+	switch t {
+	case SpotifyAlbumURI:
+		return "spotify-album"
+	case SpotifyArtistURI:
+		return "spotify-artist"
+	case MusicBrainzId:
+		return "musicbrainz"
+	case DiscogsReleaseId:
+		return "discogs-release"
+	case DiscogsMasterId:
+		return "discogs-master"
+	}
+
+	return "unknown"
+}
+
+const (
+	SpotifyAlbumURI ThirdParty = iota
+	SpotifyArtistURI
+	MusicBrainzId
+	DiscogsReleaseId
+	DiscogsMasterId
 )
 
 //var client
@@ -180,4 +208,8 @@ func (s *VinylStorage) Save(album *VinylAlbum) (cAlbum *VinylAlbum, key string, 
 	cAlbum = album
 
 	return
+}
+
+func (s *VinylStorage) getNewId() int64 {
+	return s.redis.Incr(ctx, "next_album_id").Val()
 }
