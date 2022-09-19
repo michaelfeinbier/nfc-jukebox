@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, onBeforeMount, ref, watch } from 'vue';
+import { reactive, onBeforeMount, ref, watch, computed } from 'vue';
 import Vibrant from 'node-vibrant/dist/vibrant.worker'
 import {onBeforeRouteUpdate, useRoute} from "vue-router"
 
@@ -7,9 +7,10 @@ const route = useRoute()
 const record = reactive({
     artist: 'unknown',
     name: 'unknown',
-    year: 1984,
+    ReleaseDate: "1984-06-04",
     artwork: 'https://via.placeholder.com/640',
     color: '#DDD',
+    tracks: [],
     palette: {
         main: '#ddd',
         title: '#000',
@@ -17,14 +18,13 @@ const record = reactive({
     }
 })
 
-watch(
-    () => route.params.id,
-    async newId => {
-        return await fetchRecord(newId)
+const year = computed(() => {
+    if(record.ReleaseDate.length >= 4) {
+        return record.ReleaseDate.substring(0, 4)
     }
-)
 
-onBeforeRouteUpdate(() => console.log)
+    return 1984
+})
 
 onBeforeMount(async () => {
     await fetchRecord(route.params.id)
@@ -37,6 +37,8 @@ async function fetchRecord(id) {
     record.artist = data.Artist
     record.name = data.Name
     record.artwork = data.Metadata.Image
+    record.tracks = data.Metadata.Tracks
+    record.ReleaseDate = data.Metadata.ReleaseDate
 
     let v = Vibrant.from(record.artwork)
     let p = await v.getPalette()
@@ -52,22 +54,31 @@ async function fetchRecord(id) {
 </script>
 
 <template>
-    <div class="view vh-100 d-flex p-2">
-    <div class="card border-0 m-auto shadow-lg">
+    <div class="view min-vh-100 d-flex flex-column p-2">
+    <div class="card border-0 shadow-lg m-3">
         <img :src="record.artwork" alt="" class="card-img-top">
         <div class="card-body text-center">
             <h5 class="card-title">
                 {{ record.name }}
             </h5>
-            <p class="card-text">{{ record.artist }}</p>
+            <p class="card-text">{{ record.artist }} ({{ year }})</p>
         </div>
+    </div>
+
+    <div class="card border-0 m-3">
+        <div class="card-header">
+            Tracks
+        </div>
+        <ul class="list-group list-group-flush list-group-numbered">
+            <li class="list-group-item d-flex" v-for="track in record.tracks"><span>{{track.Name}}</span></li>
+        </ul>
     </div>
 
     </div>
 </template>
 
 <style lang="scss" scoped>
-    .view {
+.view {
         background-color: v-bind('record.palette.main');
     }
 
@@ -81,5 +92,11 @@ async function fetchRecord(id) {
 
     .card-text {
         color: v-bind('record.palette.text')
+    }
+
+    .card-header {
+        color: v-bind('record.palette.title');
+        background-color: v-bind('record.palette.text');
+
     }
 </style>

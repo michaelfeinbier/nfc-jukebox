@@ -1,4 +1,5 @@
 #!/bin/sh
 
 . ./.env
-cd server && go run .
+
+concurrently "cd app && yarn dev" "cd server && go run ."
