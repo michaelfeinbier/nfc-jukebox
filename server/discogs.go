@@ -23,14 +23,15 @@ type DiscogsPagination struct {
 }
 
 type DiscogsAlbum struct {
-	Id            int    `json:"id"`
-	Type          string `json:"type"`
-	Year          string `json:"year"`
-	MasterId      int    `json:"master_id"`
-	CatalogNumber string `json:"catno"`
-	Title         string `json:"title"`
-	Image         string `json:"cover_image"`
-	Thumbnail     string `json:"thumb"`
+	Id            int      `json:"id"`
+	Title         string   `json:"title"`
+	Type          string   `json:"type"`
+	Format        []string `json:"format"`
+	Year          string   `json:"year"`
+	MasterId      int      `json:"master_id"`
+	CatalogNumber string   `json:"catno"`
+	Image         string   `json:"cover_image"`
+	Thumbnail     string   `json:"thumb"`
 }
 
 const (
@@ -40,7 +41,7 @@ const (
 func (d *Discogs) FindByQuery(q string) (DiscogsSearchResult, error) {
 	res := DiscogsSearchResult{}
 
-	req, e := http.NewRequest("GET", fmt.Sprintf("%s/database/search?q=%s", DISCOGS_BASE, q), nil)
+	req, e := http.NewRequest("GET", fmt.Sprintf("%s/database/search?q=%s&type=release", DISCOGS_BASE, q), nil)
 	req.Header.Add("Authorization", fmt.Sprintf("Discogs token=%s", d.Token))
 	if e != nil {
 		return res, e
