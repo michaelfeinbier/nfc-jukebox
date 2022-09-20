@@ -62,33 +62,17 @@ const (
 	LINK_KEY_PREFIX  = "link"
 )
 
-// Hash Link types
-type ThirdParty int64
-
-func (t ThirdParty) String() string {
-	switch t {
-	case SpotifyAlbumURI:
-		return "spotify-album"
-	case SpotifyArtistURI:
-		return "spotify-artist"
-	case MusicBrainzId:
-		return "musicbrainz"
-	case DiscogsReleaseId:
-		return "discogs-release"
-	case DiscogsMasterId:
-		return "discogs-master"
-	}
-
-	return "unknown"
-}
-
 const (
-	SpotifyAlbumURI ThirdParty = iota
-	SpotifyArtistURI
-	MusicBrainzId
-	DiscogsReleaseId
-	DiscogsMasterId
+	SpotifyAlbumURI  = "spotify-album"
+	SpotifyArtistURI = "spotify-artist"
+	MusicBrainzId    = "musicbrainz"
+	DiscogsReleaseId = "discogs-release"
+	DiscogsMasterId  = "discogs-master"
 )
+
+type CreateRecordRequest struct {
+	Links map[string]string `json:"links"`
+}
 
 //var client
 
@@ -176,7 +160,16 @@ func TransformMetadata(r *Spotify.FullAlbum, a *AlbumMetadata) {
 	a.Tracks = tracks
 }
 
-func (s *VinylStorage) Create(album *VinylAlbum) (*VinylAlbum, error) {
+func (s *VinylStorage) Create(c *CreateRecordRequest) (int64, error) {
+	id := s.getNewId()
+	key := fmt.Sprintf("%s:%d", LINK_KEY_PREFIX, id)
+	s.redis.HSet(ctx, key, c.Links)
+	s.redis.SAdd(ctx, ALBUM_LIST_KEY, id)
+
+	return id, nil
+}
+
+func (s *VinylStorage) CreateA(album *VinylAlbum) (*VinylAlbum, error) {
 	album.Id = album.Metadata.UPCRelease
 	if album.Id == "" {
 		return album, fmt.Errorf("Record does not have barcode in .Metadata.UPCRelease")

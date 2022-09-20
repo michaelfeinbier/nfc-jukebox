@@ -1,6 +1,7 @@
 <script setup>
 import { onBeforeMount, ref } from 'vue';
 import { store } from '../store'
+import Navigation from './Navigation.vue';
 
 onBeforeMount(async () => {
     store.loadAlbumList()
@@ -9,7 +10,8 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-    <div class="home p-3">
+    <div class="home">
+        <navigation></navigation>
         <div class="list-group">
             <router-link :to="`/view/${album.Id}`" class="list-group-item d-flex justify-content-start" v-for="album in store.albumList">
                 <img class="rounded" :src="album.Metadata.Image" />

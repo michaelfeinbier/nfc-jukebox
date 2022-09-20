@@ -76,6 +76,16 @@ func main() {
 			c.IndentedJSON(http.StatusOK, storage.getAll())
 		})
 
+		api.POST("/album", func(ctx *gin.Context) {
+			req := CreateRecordRequest{}
+			if errA := ctx.BindJSON(&req); errA != nil {
+				ctx.AbortWithError(400, errA)
+				return
+			}
+
+			storage.Create(&req)
+			ctx.IndentedJSON(200, req)
+		})
 		// connect services to search
 		search := api.Group("/search")
 		{
@@ -96,21 +106,6 @@ func main() {
 	}
 
 	server.Run(fmt.Sprintf(":%s", os.Getenv("HTTP_PORT")))
-}
-
-func saveAlbum(c *gin.Context) {
-	newAlbum := VinylAlbum{}
-
-	if err := c.BindJSON(&newAlbum); err != nil {
-		return
-	}
-
-	if _, err := storage.Create(&newAlbum); err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	c.IndentedJSON(http.StatusCreated, newAlbum)
 }
 
 func getAlbumById(c *gin.Context) {
