@@ -2,7 +2,7 @@
     <div id="new">
         <Navigation title="Neuer Eintrag"></Navigation>
 
-        <form @submit.prevent="onSubmit" class="bg-light border-1 m-2 p-2 rounded">
+        <form @submit.prevent="onSubmit" class="bg-light border m-2 p-2 rounded">
             <div class="mb-3">
                 <div class="input-group">
                     <input v-model="query" type="text" class="form-control" placeholder="Freitext Suche" />
@@ -13,6 +13,16 @@
                 <button type="submit" class="btn btn-primary">Suche</button>
             </div>
         </form>
+
+        <form>
+        <div class="bg-light m-2 rounded row border">
+            <div class="col p-2">
+                <input type="text" class="form-control" placeholder="K&uuml;nstler" v-model="selected.artist" required>
+            </div>
+            <div class="col p-2">
+                <input type="text" class="form-control" placeholder="Titel" v-model="selected.name" required>
+            </div>
+        </div>
 
         <div class="card m-2" v-show="result.discogs">
             <div class="card-header">
@@ -87,8 +97,9 @@
         </div>
 
     <div class="m-2 p-2 text-center">
-        <button type="button" class="btn btn-lg btn-primary">Speichern</button>
+        <button type="submit" class="btn btn-lg btn-primary">Speichern</button>
     </div>
+    </form>
 
     </div>
 </template>
@@ -102,6 +113,8 @@ const query = ref()
 const result = ref([])
 
 const selected = reactive({
+    name: null,
+    artist: null,
     discogs: null,
     musicbrainz: null,
     spotify: null
@@ -112,6 +125,8 @@ const onSubmit = async() => {
         result.value = await(await fetch("/api/search/" + escapeHtml(query.value))).json()
 
         selectMostMatching()
+        selected.name = result.value.name
+        selected.artist = result.value.artist
     }
 }
 

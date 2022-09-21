@@ -71,7 +71,9 @@ const (
 )
 
 type CreateRecordRequest struct {
-	Links map[string]string `json:"links"`
+	Name   string            `json:"name"`
+	Artist string            `json:"artist"`
+	Links  map[string]string `json:"links"`
 }
 
 //var client

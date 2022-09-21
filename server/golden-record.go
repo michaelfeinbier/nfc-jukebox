@@ -11,6 +11,8 @@ type GoldenRecord struct {
 }
 
 type CombinedSearchResult struct {
+	Name        string                   `json:"name"`
+	Artist      string                   `json:"artist"`
 	MusicBrainz []*gomusicbrainz.Release `json:"musicbrainz"`
 	Discogs     []*DiscogsAlbum          `json:"discogs"`
 	Spotify     *[]Spotify.SimpleAlbum   `json:"spotify"`
@@ -29,6 +31,7 @@ func (g *GoldenRecord) CombinedSearch(q string) (CombinedSearchResult, error) {
 	cr.MusicBrainz = mr
 
 	g.GuessSpotifyFromResults(&cr)
+	g.GuessTitleFromResults(&cr)
 
 	return cr, nil
 }
@@ -50,5 +53,23 @@ func (g *GoldenRecord) GuessSpotifyFromResults(s *CombinedSearchResult) {
 
 	if r.Albums.Total > 0 {
 		s.Spotify = &r.Albums.Albums
+	}
+}
+
+func (g *GoldenRecord) GuessTitleFromResults(s *CombinedSearchResult) error {
+	if len(s.MusicBrainz) > 0 {
+		r := s.MusicBrainz[0]
+		s.Artist = r.ArtistCredit.NameCredits[0].Artist.Name
+		s.Name = r.Title
+		return nil
+	} else if len(*s.Spotify) > 0 {
+		r := (*s.Spotify)[0]
+		s.Artist = r.Artists[0].Name
+		s.Name = r.Name
+		return nil
+		//} else if len(s.Discogs) > 0 {
+		//	return nil
+	} else {
+		return fmt.Errorf("Could not create Title from search results")
 	}
 }
