@@ -1,0 +1,22 @@
+{
+  "name": "nfc-jukebox",
+  "version": "1.0.0",
+  "repository": "git@github.com:michaelfeinbier/go-vinyl-playback.git",
+  "author": "Michael Feinbier <michael@feinbier.net>",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.4.0",
+    "env-cmd": "^10.1.0",
+    "nodemon": "^2.0.20"
+  },
+  "scripts": {
+    "server": "env-cmd nodemon --exec 'cd server && go run .' --signal SIGTERM",
+    "app": "cd app && yarn run dev",
+    "dev": "concurrently npm:app npm:server"
+  },
+  "nodemonConfig":{
+    "ext": "go",
+    "watch": ["server/"]
+  }
+
+}
